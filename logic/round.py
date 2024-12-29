@@ -86,22 +86,22 @@ class Round:
 		:param groups: The grouped list of players to match.
 		:return: The grouped list of matches.
 		"""
-		return self._merge_groups_forward(groups, [])
+		return self._merge_groups(groups, [])
 
-	def _merge_groups_forward(
+	def _merge_groups(
 		self,
 		groups: list[list[Player]],
 		grouped_matches: list[set[tuple[Player, Player]]],
 		start: int = 0
 	) -> list[set[tuple[Player, Player]]]:
 		"""
-		Attempts to match players in groups, merging forward if necessary.
+		Attempts to match players in groups, merging if necessary.
 
 		:param groups: The grouped list of players to match.
 		:param grouped_matches: The grouped list of matches.
 		:param start: The index to start matching from.
-		:raises: If unable to match all players.
 		:return: The grouped list of matches.
+		:raises ValueError: If unable to match all players.
 		"""
 		for i, group in enumerate(groups[start:]):
 			group_matches = self._match_group(group)
@@ -109,37 +109,12 @@ class Round:
 				grouped_matches.append(group_matches)
 			elif (j := start + i) < len(groups):
 				groups[j] += groups.pop(j + 1)
-				return self._merge_groups_forward(groups, grouped_matches, i)
+				return self._merge_groups(groups, grouped_matches, j)
 			elif len(groups) > 1:
 				groups[-2] += groups.pop()
-				return self._merge_groups_backward(groups, grouped_matches[:-1])
+				return self._merge_groups(groups, grouped_matches[:-1], j - 1)
 			else:
 				raise ValueError("Unable to match all players.")
-
-		return grouped_matches
-
-	def _merge_groups_backward(
-		self,
-		groups: list[list[Player]],
-		grouped_matches: list[set[tuple[Player, Player]]]
-	) -> list[set[tuple[Player, Player]]]:
-		"""
-		Attempts to match players in groups, merging backward if necessary.
-
-		:param groups: The grouped list of players to match.
-		:param grouped_matches: The grouped list of matches.
-		:raises: If unable to match all players.
-		:return: The grouped list of matches.
-		"""
-		group_matches = self._match_group(groups[-1])
-
-		if group_matches:
-			grouped_matches.append(group_matches)
-		elif len(groups) > 1:
-			groups[-2] += groups.pop()
-			return self._merge_groups_backward(groups, grouped_matches[:-1])
-		else:
-			raise ValueError("Unable to match all players.")
 
 		return grouped_matches
 
