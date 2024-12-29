@@ -8,7 +8,7 @@ id_generator: count = count(start=1)
 """ID generator."""
 
 
-@define(init=False, kw_only=True)
+@define(init=False, order=False, kw_only=True)
 class Player(ABC):
 	"""
 	Represents a player in a fencing tournament.
@@ -47,6 +47,12 @@ class Player(ABC):
 	def score(self) -> tuple[tuple[int, int], int, int]:
 		"""Gives the player's score."""
 		return self.result, self.indicator, self.touches_scored
+
+	def __lt__(self, other: 'Player') -> bool:
+		return self.score < other.score
+
+	def __gt__(self, other: 'Player') -> bool:
+		return self.score > other.score
 
 	def record_match(self, *, result: str, scored: int, received: int, opponent: int) -> None:
 		"""

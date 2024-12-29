@@ -31,7 +31,7 @@ class Round:
 
 	def __attrs_post_init__(self) -> None:
 		"""Initializes the round by sorting players and setting matches and bye."""
-		self._sort_players()
+		self.players.sort()
 		players, bye = self._separate_players()
 		groups = self._group_players(players)
 		grouped_matches = self._match_groups(groups)
@@ -39,10 +39,6 @@ class Round:
 
 		object.__setattr__(self, "matches", matches)
 		object.__setattr__(self, "bye", bye)
-
-	def _sort_players(self) -> None:
-		"""Sorts players by score (victories, draws, indicator and touches scored)."""
-		self.players.sort(key=lambda player: player.score, reverse=True)
 
 	def _separate_players(self) -> tuple[list[Player], Optional[Player]]:
 		"""
