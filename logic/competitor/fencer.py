@@ -35,13 +35,13 @@ class Gender(StrEnum):
 	Enumeration for the gender of a fencer.
 
     Values:
-        - MALE: The fencer is a male.
-        - FEMALE: The fencer is a female.
-        - OTHER: The fencer identifies as other.
+        - HOMME: The fencer is a male.
+        - FEMME: The fencer is a female.
+        - AUTRE: The fencer identifies as other.
 	"""
-	MALE = auto()
-	FEMALE = auto()
-	OTHER = auto()
+	HOMME = auto()
+	FEMME = auto()
+	AUTRE = auto()
 
 
 @define(kw_only=True)
