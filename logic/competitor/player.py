@@ -1,88 +1,147 @@
 from abc import ABC
 from itertools import count
+from typing import ClassVar, Literal, Optional
 from attrs import define, field, setters, validators
 from logic.utils import validator_pos_int, validator_pos_z_int
 
+# Types
+MatchResult: type[str] = Literal["win", "loss", "draw"]
 
-id_generator: count = count(start=1)
-"""ID generator."""
 
-
-@define(init=False, order=False, kw_only=True)
+@define(init=False, kw_only=True, eq=False)
 class Player(ABC):
 	"""
-	Represents a player in a fencing tournament.
+    Represents a player in a tournament with match and score tracking.
 
-	Attributes:
-        id: A unique identifier for the player.
-        victories: The number of matches won by the player.
-        draws: The number of matches drawn by the player.
-        touches_scored: The total touches scored by the player.
-        touches_received: The total touches received by the player.
-        opponents: A set of IDs representing opponents faced.
-        exempted: Whether the player has been exempted from a round.
-	"""
-	id: int = field(factory=id_generator.__next__, on_setattr=setters.frozen)
-	victories: int = field(default=0, validator=validator_pos_z_int)
-	draws: int = field(default=0, validator=validator_pos_z_int)
-	touches_scored: int = field(default=0, validator=validator_pos_z_int)
-	touches_received: int = field(default=0, validator=validator_pos_z_int)
+    Attributes:
+        id: Unique player identifier.
+        victories: Number of matches won.
+        draws: Number of matches drawn.
+        touches_scored: Total touches scored.
+        touches_received: Total touches received.
+        opponents: Set of opponent IDs faced.
+        exempted: Whether the player is exempted in a round.
+        _cached_score: Cached score details for ranking.
+    """
+	# Class-level ID generator
+	_id_generator: ClassVar[count[int]] = count(start=1)
+
+	# Identity
+	id: int = field(factory=_id_generator.__next__, on_setattr=setters.frozen)
+
+	# Match statistics
+	victories: int = field(default=0, validator=validator_pos_z_int, repr=False)
+	draws: int = field(default=0, validator=validator_pos_z_int, repr=False)
+
+	# Touch statistics
+	touches_scored: int = field(default=0, validator=validator_pos_z_int, repr=False)
+	touches_received: int = field(default=0, validator=validator_pos_z_int, repr=False)
+
+	# Tournament tracking
 	opponents: set[int] = field(
 		factory=set,
-		validator=validators.deep_iterable(validator_pos_int, validators.instance_of(set))
+		validator=validators.deep_iterable(validator_pos_int, validators.instance_of(set)),
+		repr = False
 	)
-	exempted: bool = field(default=False, validator=validators.instance_of(bool))
+	exempted: bool = field(default=False, validator=validators.instance_of(bool), repr=False)
+
+	# Cache score
+	_cached_score: Optional[tuple[tuple[int, int], int, int]] = field(default=None, repr=False)
 
 	@property
 	def result(self) -> tuple[int, int]:
-		"""Gives the player's result."""
+		"""Returns the match results as a tuple of (victories, draws)."""
 		return self.victories, self.draws
 
 	@property
 	def indicator(self) -> int:
-		"""Computes the player's indicator."""
+		"""Returns the performance indicator (touches scored - touches received)."""
 		return self.touches_scored - self.touches_received
 
 	@property
 	def score(self) -> tuple[tuple[int, int], int, int]:
-		"""Gives the player's score."""
-		return self.result, self.indicator, self.touches_scored
+		"""Returns the player's score tuple for ranking purposes."""
+		if not self._cached_score:
+			self._cached_score = (self.result, self.indicator, self.touches_scored)
+		return self._cached_score
 
 	def __lt__(self, other: 'Player') -> bool:
+		"""Compares two players based on their scores."""
 		return self.score < other.score
 
-	def __gt__(self, other: 'Player') -> bool:
-		return self.score > other.score
-
-	def record_match(self, *, result: str, scored: int, received: int, opponent: int) -> None:
+	def add_match(
+		self,
+		*,
+		opponent: 'Player',
+		self_result: MatchResult,
+		touches_scored: int,
+		touches_received: int
+	) -> None:
 		"""
-		Records the result of a match for the player.
+		Records the result of a match against an opponent.
 
-		:param result: The result of the match (`win`, `loss` or `draw`).
-		:param scored: Touches scored in the match.
-		:param received: Touches received in the match.
-		:param opponent: The ID of the opponent.
-		:raises ValueError: If the touches are negative or if the opponent is already recorded.
+        Args:
+            opponent: The opposing player.
+            self_result: The result for this player ("win", "loss", "draw").
+            touches_scored: Touches scored by this player.
+            touches_received: Touches received by this player.
+
+        Raises:
+            ValueError: If touches are negative or opponents have already faced each other.
 		"""
-		if (scored < 0) or (received < 0):
+		if opponent.id in self.opponents:
+			raise ValueError(f"{self} already faced {opponent}.")
+		if self.id in opponent.opponents:
+			raise ValueError(f"{opponent} already faced {self}.")
+		if (touches_scored < 0) or (touches_received < 0):
 			raise ValueError("Touches must be non-negative.")
-		if opponent in self.opponents:
-			raise ValueError(f"Match against player {opponent} is already recorded.")
 
-		if result == "win":
+		result_map = {
+			"win": ("win", "loss"),
+			"loss": ("loss", "win"),
+			"draw": ("draw", "draw"),
+		}
+
+		self_side, opponent_side = result_map[self_result]
+		self._add_side_of_match(opponent.id, self_side, touches_scored, touches_received)
+		opponent._add_side_of_match(self.id, opponent_side, touches_received, touches_scored)
+
+	def _add_side_of_match(
+		self,
+		opponent_id: int,
+		self_result: MatchResult,
+		touches_scored: int,
+		touches_received: int
+	) -> None:
+		"""Updates the player's statistics based on a match result."""
+		if self_result == "win":
 			self.victories += 1
-		elif result == "draw":
+		elif self_result == "draw":
 			self.draws += 1
 
-		self.touches_scored += scored
-		self.touches_received += received
-		self.opponents.add(opponent)
+		self.touches_scored += touches_scored
+		self.touches_received += touches_received
+		self.opponents.add(opponent_id)
+		self._cached_score = None
 
-	def reset_stats(self) -> None:
-		"""Resets all the player's statistics."""
+	def add_bye(self) -> None:
+		"""
+		Marks the player as exempted for a round.
+
+		Raises:
+			ValueError: If the player has already been exempted.
+		"""
+		if self.exempted:
+			raise ValueError(f"{self} has already been exempted.")
+
+		self.exempted = True
+
+	def reset(self) -> None:
+		"""Resets the player's statistics and state."""
 		self.victories = 0
 		self.draws = 0
 		self.touches_scored = 0
 		self.touches_received = 0
 		self.opponents.clear()
 		self.exempted = False
+		self._cached_score = None
