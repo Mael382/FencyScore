@@ -1,29 +1,36 @@
+from typing import Callable, Final
 from attrs import validators
+from functools import lru_cache
+
+# Constants
+CACHE_SIZE: Final[int] = 128
 
 
-def converter_str_upper(value: str) -> str:
+def create_string_converter(transform_func: Callable[[str], str]) -> Callable[[str], str]:
 	"""
-	Converts a string to uppercase after stripping leading and trailing whitespace.
+	Creates a string converter function that applies a transformation to stripped string inputs and caches the results.
 
-	:param value: The string to convert.
-	:return: The stripped string in uppercase.
+	Args:
+        transform_func: A callable that transforms a string (e.g., `str.upper`).
+
+    Returns:
+        A cached callable that applies the transformation to a stripped string.
 	"""
-	return value.strip().upper()
+
+	def pre_process(value: str) -> str:
+		return transform_func(value.strip())
+
+	@lru_cache(maxsize=CACHE_SIZE)
+	def converter(value: str) -> str:
+		return pre_process(value)
+
+	return converter
 
 
-def converter_str_title(value: str) -> str:
-	"""
-	Converts a string to title case after stripping leading and trailing whitespace.
+# String converters
+converter_str_upper: Callable[[str], str] = create_string_converter(str.upper)
+converter_str_title: Callable[[str], str] = create_string_converter(str.title)
 
-	:param value: The string to convert.
-	:return: The stripped string in title case.
-	"""
-	return value.strip().title()
-
-
-validator_pos_int = validators.and_(validators.instance_of(int), validators.gt(0))
-"""Validates a positive integers. Ensures that the value is an integer greater than 0."""
-
-
-validator_pos_z_int = validators.and_(validators.instance_of(int), validators.ge(0))
-"""Validates a non-negative integers. Ensures that the value is an integer greater than or equal to 0."""
+# Integer validators
+validator_pos_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.gt(0))
+validator_pos_z_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.ge(0))
