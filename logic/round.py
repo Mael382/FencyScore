@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from itertools import combinations
 from typing import Optional
 from attrs import define, field, validators
@@ -11,13 +11,13 @@ from logic.utils import validator_pos_int
 @define(frozen=True, kw_only=True)
 class Round:
 	"""
-	Represents a round in a fencing tournament.
+	Represents a round in a tournament.
 
 	Attributes:
-		rank: The rank of the round.
-		players: The sorted list of players participating in the round.
-		matches: The list of matches scheduled in the round.
-		bye: The player receiving a bye, if applicable.
+		rank: Round's number.
+		players: Players participating.
+		matches: Matches generated.
+		bye: Player who gets a bye.
 	"""
 	rank: int = field(validator=validator_pos_int)
 	players: list[Player] = field(
@@ -25,12 +25,11 @@ class Round:
 	)
 	matches: list[Match] = field(
 		init=False,
-		validator=validators.deep_iterable(validators.instance_of(Match), validators.instance_of(list))
+		validator=validators.deep_iterable(validators.instance_of(Match), validators.instance_of(deque))
 	)
 	bye: Optional[Player] = field(init=False, validator=validators.optional(validators.instance_of(Player)))
 
 	def __attrs_post_init__(self) -> None:
-		"""Initializes the round by sorting players and setting matches and bye."""
 		self.players.sort()
 		players, bye = self._separate_players()
 		groups = self._group_players(players)
@@ -41,68 +40,44 @@ class Round:
 		object.__setattr__(self, "bye", bye)
 
 	def _separate_players(self) -> tuple[list[Player], Optional[Player]]:
-		"""
-		Separates players into competing players and an exempted player if the total count is odd.
-
-		:return: The list of competing players and the exempted player, if any.
-		"""
+		"""Separates competing players and the exempt player."""
 		competing_players = self.players.copy()
-		exempted_player = None
+		exempt_player = None
 
 		if len(self.players) % 2 != 0:
-			for i, player in enumerate(reversed(competing_players)):
+			for i, player in enumerate(reversed(competing_players), start=1):
 				if not player.exempted:
-					exempted_player = competing_players.pop(-1 - i)
+					exempt_player = competing_players.pop(-i)
 					break
 
-		return competing_players, exempted_player
+		return competing_players, exempt_player
 
 	@staticmethod
-	def _group_players(players: list[Player]) -> list[list[Player]]:
-		"""
-		Groups players by result (victories and draws).
-
-		:param players: The list of players to group.
-		:return: The grouped list of players.
-		"""
-		groups = defaultdict(list)
+	def _group_players(players: list[Player]) -> list[deque[Player]]:
+		"""Groups players based on their results."""
+		groups = defaultdict(deque)
 		for player in players:
 			groups[player.result].append(player)
 
-		grouped_players = []
-		for key in sorted(groups.keys(), reverse=True):
-			grouped_players.append(groups[key])
+		grouped_players = deque(groups[key] for key in sorted(groups.keys(), reverse=True))
 
-		for i, group in enumerate(grouped_players[:-1]):
-			if len(group) % 2 != 0:
-				group.append(grouped_players[i + 1].pop(0))
+		for i in range(len(grouped_players) - 1):
+			if len(grouped_players[i]) % 2 != 0:
+				grouped_players[i].append(grouped_players[i + 1].popleft())
 
-		return grouped_players
+		return list(grouped_players)
 
-	def _match_groups(self, groups: list[list[Player]]) -> list[set[tuple[Player, Player]]]:
-		"""
-		Matches players within each group.
-
-		:param groups: The grouped list of players to match.
-		:return: The grouped list of matches.
-		"""
-		return self._merge_groups(groups, [])
+	def _match_groups(self, groups: list[deque[Player]]) -> deque[set[tuple[Player, Player]]]:
+		"""Creates matches within and across groups."""
+		return self._merge_groups(groups, deque(), 0)
 
 	def _merge_groups(
 		self,
-		groups: list[list[Player]],
-		grouped_matches: list[set[tuple[Player, Player]]],
-		start: int = 0
-	) -> list[set[tuple[Player, Player]]]:
-		"""
-		Attempts to match players in groups, merging if necessary.
-
-		:param groups: The grouped list of players to match.
-		:param grouped_matches: The grouped list of matches.
-		:param start: The index to start matching from.
-		:return: The grouped list of matches.
-		:raises ValueError: If unable to match all players.
-		"""
+		groups: list[deque[Player]],
+		grouped_matches: deque[set[tuple[Player, Player]]],
+		start: int
+	) -> deque[set[tuple[Player, Player]]]:
+		"""Creates matches and merge groups if necessary."""
 		for i, group in enumerate(groups[start:]):
 			group_matches = self._match_group(group)
 			if group_matches:
@@ -111,20 +86,16 @@ class Round:
 				groups[j] += groups.pop(j + 1)
 				return self._merge_groups(groups, grouped_matches, j)
 			elif len(groups) > 1:
-				groups[-2] += groups.pop()
-				return self._merge_groups(groups, grouped_matches[:-1], j - 1)
+				groups[-1] = groups[-2] + groups.pop()
+				grouped_matches.pop()
+				return self._merge_groups(groups, grouped_matches, j - 1)
 			else:
 				raise ValueError("Unable to match all players.")
 
 		return grouped_matches
 
-	def _match_group(self, group: list[Player]) -> set[tuple[Player, Player]]:
-		"""
-		Matches a group of players.
-
-		:param group: The group of players to match.
-		:return: The group of matches.
-		"""
+	def _match_group(self, group: deque[Player]) -> set[tuple[Player, Player]]:
+		"""Creates matches within a single group of players."""
 		matching_graph = self._group_to_matching_graph(group)
 		matches = min_weight_matching(matching_graph)
 
@@ -133,13 +104,8 @@ class Round:
 
 		return matches
 
-	def _group_to_matching_graph(self, group: list[Player]) -> Graph:
-		"""
-		Converts a grouped list of players into a graph for minimum-weight matching.
-
-		:param group: The group of players to convert.
-		:return: The graph of players.
-		"""
+	def _group_to_matching_graph(self, group: deque[Player]) -> Graph:
+		"""Converts a group of players into a weighted graph for matching."""
 		graph = Graph()
 		graph.add_nodes_from(group)
 
@@ -151,24 +117,12 @@ class Round:
 
 	@staticmethod
 	def _matching_distance(rank1: int, rank2: int, size: int) -> int:
-		"""
-		Computes the matching distance between two players based on their rank in a group.
-
-		:param rank1: The rank of the first player.
-		:param rank2: The rank of the second player.
-		:param size: The size of the group of players.
-		:return: The matching distance between the two players.
-		"""
+		"""Distance metric for optimal matching."""
 		return abs(abs(rank1 - rank2) - size // 2)
 
 	@staticmethod
-	def _ungroup_matches(grouped_matches: list[set[tuple[Player, Player]]]) -> list[tuple[Player, Player]]:
-		"""
-		Ungroups matches.
-
-		:param grouped_matches: The grouped list of matches to ungroup.
-		:return: The list of matches.
-		"""
+	def _ungroup_matches(grouped_matches: deque[set[tuple[Player, Player]]]) -> list[tuple[Player, Player]]:
+		"""Ungroups matches."""
 		matches = []
 
 		for group_matches in grouped_matches:
