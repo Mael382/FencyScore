@@ -87,5 +87,4 @@ class Fencer(Player):
 	rank: int = field(default=0, validator=validator_pos_z_int)
 
 	def __str__(self) -> str:
-		"""Returns a string representation of the fencer."""
 		return f"{self.lastname} {self.firstname}"
