@@ -9,7 +9,7 @@ from logic.utils import validator_pos_int, validator_pos_z_int
 @unique
 class MatchResult(StrEnum):
 	"""
-	TODO
+	Enumeration of match results for players.
 
 	Values:
     	WIN: Player won the match.
