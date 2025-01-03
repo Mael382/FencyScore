@@ -24,7 +24,7 @@ class MatchResult(StrEnum):
 @define(kw_only=True, init=False, eq=False)
 class Player(ABC):
 	"""
-    Represents a player in a tournament with ID and performance tracking.
+    Represents a player in a tournament (ID and performance).
 
     Attributes:
         id: Unique identifier.
@@ -33,12 +33,11 @@ class Player(ABC):
         touches_scored: Total touches scored.
         touches_received: Total touches received.
         opponents: Opponent IDs faced.
-        exempted: Whether the player has been exempted in a round.
+        exempted: Whether the player has been exempted.
     """
-	# Class-level ID generator
-	_id_generator: ClassVar[count[int]] = count(start=1)
 
 	# Identity
+	_id_generator: ClassVar[count[int]] = count(start=1)
 	id: int = field(factory=_id_generator.__next__, on_setattr=setters.frozen)
 
 	# Match statistics
@@ -57,7 +56,7 @@ class Player(ABC):
 	)
 	exempted: bool = field(default=False, validator=validators.instance_of(bool), repr=False)
 
-	# Cache score
+	# Cache
 	_cached_score: Optional[tuple[tuple[int, int], int, int]] = field(default=None, repr=False)
 
 	@property
@@ -80,7 +79,7 @@ class Player(ABC):
 	def __lt__(self, other: 'Player') -> bool:
 		return self.score < other.score
 
-	def add_match(
+	def record_match(
 		self,
 		*,
 		opponent: 'Player',
@@ -89,7 +88,7 @@ class Player(ABC):
 		touches_received: int
 	) -> None:
 		"""
-		Records the result of a match against an opponent.
+		Records the result of a match.
 
         Args:
             opponent: The opposing player.
@@ -114,17 +113,17 @@ class Player(ABC):
 		}
 		self_result, opponent_result = result_map[self_result]
 
-		self._add_side_of_match(opponent.id, self_result, touches_scored, touches_received)
-		opponent._add_side_of_match(self.id, opponent_result, touches_received, touches_scored)
+		self._record_match_side(opponent.id, self_result, touches_scored, touches_received)
+		opponent._record_match_side(self.id, opponent_result, touches_received, touches_scored)
 
-	def _add_side_of_match(
+	def _record_match_side(
 		self,
 		opponent_id: int,
 		self_result: MatchResult,
 		touches_scored: int,
 		touches_received: int
 	) -> None:
-		"""Updates the player's statistics."""
+		"""Records the result of a side (right or left) in a match."""
 		if self_result == MatchResult.WIN:
 			self.victories += 1
 		elif self_result == MatchResult.DRAW:
@@ -137,7 +136,7 @@ class Player(ABC):
 
 	def add_bye(self) -> None:
 		"""
-		Marks the player as exempted for one round.
+		Marks the player as exempted.
 
 		Raises:
 			ValueError: If the player has already been exempted.
@@ -148,7 +147,7 @@ class Player(ABC):
 		self.exempted = True
 
 	def reset(self) -> None:
-		"""Resets the player's statistics."""
+		"""Resets statistics and tracking."""
 		self.victories = 0
 		self.draws = 0
 		self.touches_scored = 0
