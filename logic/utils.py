@@ -29,12 +29,12 @@ def create_string_converter(transform_func: Callable[[str], str]) -> Callable[[s
 
 # String converters
 converter_str_upper: Callable[[str], str] = create_string_converter(str.upper)
-"""TODO"""
+"""TODO"""  # TODO
 converter_str_title: Callable[[str], str] = create_string_converter(str.title)
-"""TODO"""
+"""TODO"""  # TODO
 
 # Integer validators
 validator_pos_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.gt(0))
-"""TODO"""
+"""TODO"""  # TODO
 validator_pos_z_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.ge(0))
-"""TODO"""
+"""TODO"""  # TODO
