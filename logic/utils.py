@@ -11,10 +11,10 @@ def create_string_converter(transform_func: Callable[[str], str]) -> Callable[[s
 	Creates a string converter function that applies a transformation to stripped string inputs and caches the results.
 
 	Args:
-        transform_func: A callable that transforms a string (e.g., `str.upper`).
+        transform_func: A callable that transforms a string.
 
     Returns:
-        A cached callable that applies the transformation to a stripped string.
+        A cached callable that strips and applies the transformation to a string.
 	"""
 
 	def pre_process(value: str) -> str:
@@ -29,8 +29,12 @@ def create_string_converter(transform_func: Callable[[str], str]) -> Callable[[s
 
 # String converters
 converter_str_upper: Callable[[str], str] = create_string_converter(str.upper)
+"""TODO"""
 converter_str_title: Callable[[str], str] = create_string_converter(str.title)
+"""TODO"""
 
 # Integer validators
 validator_pos_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.gt(0))
+"""TODO"""
 validator_pos_z_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.ge(0))
+"""TODO"""
