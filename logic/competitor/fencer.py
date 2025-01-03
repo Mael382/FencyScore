@@ -57,7 +57,7 @@ class Gender(StrEnum):
 class Fencer(Player):
 	"""
 	Represents a fencer in a tournament.
-	Extends the class `Player`.
+	Extends the `Player` class.
 
 	Attributes:
 		lastname: Family name.
