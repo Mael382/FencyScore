@@ -28,8 +28,12 @@ def create_string_converter(transform_func: Callable[[str], str]) -> Callable[[s
 
 
 # String converters
+converter_str_lower: Callable[[str], str] = create_string_converter(str.lower)
+"""Converts the provided string to lower case."""
 converter_str_upper: Callable[[str], str] = create_string_converter(str.upper)
-"""Converts the provided string to uppercase."""
+"""Converts the provided string to upper case."""
+converter_str_capital: Callable[[str], str] = create_string_converter(str.capitalize)
+"""Converts the provided string to capital case."""
 converter_str_title: Callable[[str], str] = create_string_converter(str.title)
 """Converts the provided string to title case."""
 
@@ -38,3 +42,7 @@ validator_pos_int: Callable[[..., ..., ...], None] = validators.and_(validators.
 """Validates the provided value to be a positive integer."""
 validator_pos_z_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.ge(0))
 """Validates the provided value to be a non-negative integer."""
+validator_neg_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.lt(0))
+"""Validates the provided value to be a negative integer."""
+validator_neg_z_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.le(0))
+"""Validates the provided value to be a non-positive integer."""
