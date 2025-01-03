@@ -93,7 +93,7 @@ class Match:
 	Attributes:
 		piste: Strip's number.
 		score_max: Maximum score allowed.
-		draw_allowed: Whether draws are allowed.
+		draw_allowed: Whether draw is allowed.
 		right_side: Right side of the match.
 		left_side: Left side of the match.
 		status: Match's status.
