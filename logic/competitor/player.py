@@ -14,7 +14,7 @@ class Player(ABC):
     Represents a player in a tournament with ID and performance tracking.
 
     Attributes:
-        id: Unique player identifier.
+        id: Unique identifier.
         victories: Number of matches won.
         draws: Number of matches drawn.
         touches_scored: Total touches scored.
