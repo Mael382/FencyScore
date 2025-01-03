@@ -10,6 +10,11 @@ from logic.utils import validator_pos_int, validator_pos_z_int
 class MatchResult(StrEnum):
 	"""
 	TODO
+
+	Values:
+    	WIN: Player won the match.
+        LOSS: Player lost the match.
+        DRAW: Match ended in a draw.
 	"""
 	WIN = auto()
 	LOSS = auto()
