@@ -1,11 +1,19 @@
 from abc import ABC
+from enum import StrEnum, auto, unique
 from itertools import count
-from typing import ClassVar, Literal, Optional
+from typing import ClassVar, Optional
 from attrs import define, field, setters, validators
 from logic.utils import validator_pos_int, validator_pos_z_int
 
-# Types
-MatchResult: type[str] = Literal["win", "loss", "draw"]
+
+@unique
+class MatchResult(StrEnum):
+	"""
+	TODO
+	"""
+	WIN = auto()
+	LOSS = auto()
+	DRAW = auto()
 
 
 @define(kw_only=True, init=False, eq=False)
@@ -80,7 +88,7 @@ class Player(ABC):
 
         Args:
             opponent: The opposing player.
-            self_result: The result for this player (`"win"`, `"loss"` or `"draw"`).
+            self_result: The result for this player (`WIN`, `LOSS` or `DRAW`).
             touches_scored: Touches scored by this player.
             touches_received: Touches received by this player.
 
@@ -95,14 +103,14 @@ class Player(ABC):
 			raise ValueError("Touches must be non-negative.")
 
 		result_map = {
-			"win": ("win", "loss"),
-			"loss": ("loss", "win"),
-			"draw": ("draw", "draw"),
+			MatchResult.WIN: (MatchResult.WIN, MatchResult.LOSS),
+			MatchResult.LOSS: (MatchResult.LOSS, MatchResult.WIN),
+			MatchResult.DRAW: (MatchResult.DRAW, MatchResult.DRAW),
 		}
-		self_side, opponent_side = result_map[self_result]
+		self_result, opponent_result = result_map[self_result]
 
-		self._add_side_of_match(opponent.id, self_side, touches_scored, touches_received)
-		opponent._add_side_of_match(self.id, opponent_side, touches_received, touches_scored)
+		self._add_side_of_match(opponent.id, self_result, touches_scored, touches_received)
+		opponent._add_side_of_match(self.id, opponent_result, touches_received, touches_scored)
 
 	def _add_side_of_match(
 		self,
@@ -112,9 +120,9 @@ class Player(ABC):
 		touches_received: int
 	) -> None:
 		"""Updates the player's statistics."""
-		if self_result == "win":
+		if self_result == MatchResult.WIN:
 			self.victories += 1
-		elif self_result == "draw":
+		elif self_result == MatchResult.DRAW:
 			self.draws += 1
 
 		self.touches_scored += touches_scored
