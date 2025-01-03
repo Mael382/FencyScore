@@ -9,7 +9,7 @@ from logic.utils import converter_str_upper
 class Team(Player):
 	"""
 	Represents a fencing team in a tournament.
-	Extends the class `Player`.
+	Extends the `Player` class.
 
 	Attributes:
         name: Official name.
