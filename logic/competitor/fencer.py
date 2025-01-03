@@ -19,7 +19,7 @@ def get_max_age_date() -> date:
 
 def validator_birthdate(_, __, value: date) -> None:
 	"""
-	Validates the provided birthdate.
+	Validates the provided value to be a realistic birthdate.
 
     Args:
     	_: Unused parameter for instance.
