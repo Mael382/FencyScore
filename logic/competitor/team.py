@@ -12,7 +12,7 @@ class Team(Player):
 	Extends the `Player` class.
 
 	Attributes:
-        name: Official name.
+        name: Team name.
         fencers: Team members.
 	"""
 
@@ -42,7 +42,7 @@ class Team(Player):
 
 	def add_fencer(self, fencer: Fencer) -> None:
 		"""
-		Adds a new fencer to the team.
+		Adds a fencer to the team.
 
 		Args:
             fencer: The fencer to add.
@@ -64,15 +64,16 @@ class Team(Player):
 
         Raises:
             ValueError: If the fencer is not in the team.
-            IndexError: If the provided index is out of range.
+            IndexError: If the index is out of range.
 		"""
-		if isinstance(fencer, int):
-			try:
-				del self[fencer]
-			except IndexError:
-				raise IndexError(f"Index {fencer} is out of range for {self}.")
-		else:
+		if isinstance(fencer, Fencer):
 			try:
 				self.fencers.remove(fencer)
 			except ValueError:
 				raise ValueError(f"{fencer} is not a member of {self}.")
+
+		else:
+			try:
+				del self[fencer]
+			except IndexError:
+				raise IndexError(f"Index {fencer} is out of range for {self}.")
