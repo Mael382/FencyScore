@@ -45,8 +45,8 @@ class Gender(StrEnum):
         FEMME: Female fencer.
         AUTRE: Other gender identity.
 	"""
-	HOMME: Final = auto()  # Male
-	FEMME: Final = auto()  # Female
+	HOMME: Final = auto()  # Men
+	FEMME: Final = auto()  # Women
 	AUTRE: Final = auto()  # Other
 
 	def __str__(self) -> str:
@@ -60,8 +60,8 @@ class Fencer(Player):
 	Extends the `Player` class.
 
 	Attributes:
-		lastname: Family name.
-		firstname: Given name.
+		lastname: Last name.
+		firstname: First name.
 		birthdate: Date of birth.
 		gender: Gender category.
 		club: Affiliated fencing club.
