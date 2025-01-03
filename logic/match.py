@@ -1,124 +1,83 @@
 from enum import StrEnum, auto, unique
 from typing import Optional
 from attrs import define, field, setters, validators
-from logic.competitor.player import Player
+from logic.competitor.player import MatchResult, Player
 from logic.utils import validator_pos_int, validator_pos_z_int
-
-
-@unique
-class PlayerStatus(StrEnum):
-	"""
-	Enumeration for the status of a player in a match.
-
-	Values:
-        - WIN: The player won the match.
-        - LOSS: The player lost the match.
-        - DRAW: The match ended in a draw.
-	"""
-	WIN = auto()
-	LOSS = auto()
-	DRAW = auto()
 
 
 @define
 class Side:
 	"""
-	Represents one side of a match in a fencing tournament.
-
-	Attributes:
-		player: The player on this side.
-		score: The current score of the player.
-		player_status: The current status of the player.
+	TODO
 	"""
 	player: Player = field(validator=validators.instance_of(Player), on_setattr=setters.frozen)
 	score: Optional[int] = field(default=None, validator=validators.optional(validator_pos_z_int))
-	player_status: Optional[PlayerStatus] = field(
+	result: Optional[MatchResult] = field(
 		default=None,
-		validator=validators.optional(validators.instance_of(PlayerStatus))
+		validator=validators.optional(validators.instance_of(MatchResult))
 	)
 
 	def update(
 			self,
 			*,
 			other: 'Side',
-			player_status: Optional[PlayerStatus] = None,
+			result: Optional[MatchResult] = None,
 			score: Optional[int] = None
 	) -> None:
 		"""
-		Updates the score and player's status for this side.
-
-		:param other: The opponent's side.
-		:param player_status: The new player's status. If `None`, it will be determined from the opponent's status or
-        scores.
-		:param score: The new score. If `None`, resets the score.
+		TODO
 		"""
 		self._update_score(score)
-		self._update_player_status(other, player_status)
+		self._update_result(other, result)
 
 	def _update_score(self, score: Optional[int]) -> None:
 		"""
-		Updates the score.
-
-		:param score: The new score. If `None`, resets the score.
+		TODO
 		"""
 		self.score = score
 
-	def _update_player_status(self, other: 'Side', player_status: Optional[PlayerStatus]) -> None:
+	def _update_result(self, other: 'Side', result: Optional[MatchResult]) -> None:
 		"""
-		Updates the player's status.
-
-		:param other: The opponent's side.
-        :param player_status: The new player's status. If `None`, it will be determined from the opponent's status or
-        scores.
+		TODO
 		"""
-		if player_status is not None:
-			self.player_status = player_status
-		elif other.player_status is not None:
-			self._set_player_status_from_opponent(other)
+		if result:
+			self.result = result
+		elif other.result:
+			self._set_result_by_opponent_result(other)
 		elif (self.score is not None) and (other.score is not None):
-			self._set_player_status_from_scores(other)
+			self._set_result_by_scores(other)
 		else:
-			self.player_status = None
+			self.result = None
 
-	def _set_player_status_from_opponent(self, other: 'Side') -> None:
+	def _set_result_by_opponent_result(self, other: 'Side') -> None:
 		"""
-		Sets the player's status based on the opponent's status.
-
-		:param other: The opponent's side.
+		TODO
 		"""
-		player_status_mapping = {
-			PlayerStatus.WIN: PlayerStatus.LOSS,
-			PlayerStatus.LOSS: PlayerStatus.WIN,
-			PlayerStatus.DRAW: PlayerStatus.DRAW
+		result_map = {
+			MatchResult.WIN: MatchResult.LOSS,
+			MatchResult.LOSS: MatchResult.WIN,
+			MatchResult.DRAW: MatchResult.DRAW
 		}
-		self.player_status = player_status_mapping[other.player_status]
+		self.result = result_map[other.result]
 
-	def _set_player_status_from_scores(self, other: 'Side') -> None:
+	def _set_result_by_scores(self, other: 'Side') -> None:
 		"""
-		Sets the player's status based on scores.
-
-		:param other: The opponent's side.
+		TODO
 		"""
 		if self.score > other.score:
-			self.player_status = PlayerStatus.WIN
+			self.result = MatchResult.WIN
 		elif self.score < other.score:
-			self.player_status = PlayerStatus.LOSS
+			self.result = MatchResult.LOSS
 		else:
-			self.player_status = PlayerStatus.DRAW
+			self.result = MatchResult.DRAW
 
 
 @unique
 class MatchStatus(StrEnum):
 	"""
-	Enumeration for the status of a match.
-
-	Values:
-		- EMPTY: The match is incomplete.
-		- VALID: The match is valid.
-		- INVALID: The match is invalid.
-		- LOCKED: The match is locked.
+	TODO
 	"""
-	EMPTY = auto()
+	BLANK = auto()
 	VALID = auto()
 	INVALID = auto()
 	LOCKED = auto()
@@ -127,80 +86,51 @@ class MatchStatus(StrEnum):
 @define(kw_only=True)
 class Match:
 	"""
-	Represents a match in a fencing tournament.
-
-	Attributes:
-		piste: The piste (strip) number.
-        score_max: Maximum score allowed for the match.
-        draw_allowed: Whether a draw is allowed in the match.
-        right: The right side of the match.
-        left: The left side of the match.
-        match_status: The current status of the match.
+	TODO
 	"""
 	piste: Optional[int] = field(default=None, validator=validators.optional(validator_pos_int))
 	score_max: int = field(validator=validator_pos_int, on_setattr=setters.frozen)
 	draw_allowed: bool = field(validator=validators.instance_of(bool), on_setattr=setters.frozen)
-	right: Side = field(validator=validators.instance_of(Side), on_setattr=setters.frozen)
-	left: Side = field(validator=validators.instance_of(Side), on_setattr=setters.frozen)
-	match_status: MatchStatus = field(default=MatchStatus.EMPTY, validator=validators.instance_of(MatchStatus))
+	right_side: Side = field(validator=validators.instance_of(Side), on_setattr=setters.frozen)
+	left_side: Side = field(validator=validators.instance_of(Side), on_setattr=setters.frozen)
+	status: MatchStatus = field(default=MatchStatus.BLANK, validator=validators.instance_of(MatchStatus))
 
 	def __attrs_post_init__(self) -> None:
-		"""
-		Initializes the match by validating the sides. Ensures that the player on each side is different.
-
-		:raises ValueError: If both sides have the same player.
-		"""
-		if self.left.player is self.right.player:
+		if self.left_side.player is self.right_side.player:
 			raise ValueError("Match must have two different players.")
 
-	def update_right(self, *, player_status: Optional[PlayerStatus] = None, score: Optional[int] = None) -> None:
+	def update_right_side(self, *, result: Optional[MatchResult] = None, score: Optional[int] = None) -> None:
 		"""
-		Updates the right-side.
+		TODO
+		"""
+		self._update_side(self.right_side, self.left_side, result, score)
 
-        :param player_status: The new player's status. If `None`, it will be determined from the left-side player's
-        status or scores.
-        :param score: The new score. If `None`, resets the score.
-        :raises ValueError: If the match is locked.
+	def update_left(self, *, result: Optional[MatchResult] = None, score: Optional[int] = None) -> None:
 		"""
-		self._update_side(self.right, self.left, player_status, score)
-
-	def update_left(self, *, player_status: Optional[PlayerStatus] = None, score: Optional[int] = None) -> None:
+		TODO
 		"""
-		Updates the left-side.
-
-		:param player_status: The new player's status. If `None`, it will be determined from the right-side player's
-		status or scores.
-        :param score: The new score. If `None`, resets the score.
-        :raises ValueError: If the match is locked.
-		"""
-		self._update_side(self.left, self.right, player_status, score)
+		self._update_side(self.left_side, self.right_side, result, score)
 
 	def _update_side(
 			self,
 			self_side: Side,
 			other_side: Side,
-			player_status: Optional[PlayerStatus] = None,
-			score: Optional[int] = None
+			self_result: Optional[MatchStatus],
+			self_score: Optional[int]
 	) -> None:
 		"""
-		Updates one side of the match.
-
-		:param self_side: The side to update.
-        :param other_side: The opponent's side.
-        :param player_status: The new player's status.
-        :param score: The new score.
-        :raises ValueError: If the match is locked.
+		TODO
 		"""
-		if self.match_status != MatchStatus.LOCKED:
+		if self.status == MatchStatus.LOCKED:
 			raise ValueError("Match is locked and cannot be updated.")
 
-		self_side.update(other=other_side, player_status=player_status, score=score)
+		self_side.update(other=other_side, result=self_result, score=self_score)
 		self._update_match_status()
 
 	def _update_match_status(self) -> None:
-		"""Updates the match's status."""
+		"""TODO"""
 		if self._is_empty():
-			self.status = MatchStatus.EMPTY
+			self.status = MatchStatus.BLANK
 		elif self._is_invalid():
 			self.status = MatchStatus.INVALID
 		else:
@@ -208,119 +138,92 @@ class Match:
 
 	def _is_empty(self) -> bool:
 		"""
-		Checks if the match is empty.
-
-		:return: `True` if the match is incomplete, otherwise `False`.
+		TODO
 		"""
 		return any((
-			self.right.player_status is None,
-			self.left.player_status is None,
-			self.right.score is None,
-			self.left.score is None
+			self.right_side.result is None,
+			self.left_side.result is None,
+			self.right_side.score is None,
+			self.left_side.score is None
 		))
 
 	def _is_invalid(self) -> bool:
 		"""
-		Checks if the match is invalid.
-
-		:return: `True` if the match is invalid, otherwise `False`.
+		TODO
 		"""
 		return self._is_invalid_with_draw_allowed() if self.draw_allowed else self._is_invalid_without_draw_allowed()
 
 	def _is_invalid_with_draw_allowed(self) -> bool:
 		"""
-		Checks if the match is invalid when draws are allowed.
-
-		:return: `True` if the match is invalid, otherwise `False`.
+		TODO
 		"""
-		return (
-			self._is_invalid_with_draw_allowed_by_player_status()
-			or self._is_invalid_with_draw_allowed_by_score()
-		)
+		return self._is_invalid_with_draw_allowed_by_results() or self._is_invalid_with_draw_allowed_by_scores()
 
-	def _is_invalid_with_draw_allowed_by_player_status(self) -> bool:
+	def _is_invalid_with_draw_allowed_by_results(self) -> bool:
 		"""
-		Checks if player statuses are invalid when draws are allowed.
-
-		:return: `True` if a player's status is invalid, otherwise `False`.
+		TODO
 		"""
-		return (self.right.player_status == self.left.player_status) and (self.right.player_status != PlayerStatus.DRAW)
+		return (self.right_side.result == self.left_side.result) and (self.right_side.result != MatchResult.DRAW)
 
-	def _is_invalid_with_draw_allowed_by_score(self) -> bool:
+	def _is_invalid_with_draw_allowed_by_scores(self) -> bool:
 		"""
-		Checks if scores are invalid when draws are allowed.
-
-		:return: `True` if a score is invalid, otherwise `False`.
+		TODO
 		"""
 		return any((
-			(self.right.player_status == PlayerStatus.WIN) and (self.right.score <= self.left.score),
-			(self.right.player_status == PlayerStatus.LOSS) and (self.right.score >= self.left.score),
-			(self.right.player_status == PlayerStatus.DRAW) and (self.right.score != self.left.score),
-			(self.left.player_status == PlayerStatus.WIN) and (self.left.score <= self.right.score),
-			(self.left.player_status == PlayerStatus.LOSS) and (self.left.score >= self.right.score),
-			(self.left.player_status == PlayerStatus.DRAW) and (self.left.score != self.right.score)
+			(self.right_side.result == MatchResult.WIN) and (self.right_side.score <= self.left_side.score),
+			(self.right_side.result == MatchResult.LOSS) and (self.right_side.score >= self.left_side.score),
+			(self.right_side.result == MatchResult.DRAW) and (self.right_side.score != self.left_side.score),
+			(self.left_side.result == MatchResult.WIN) and (self.left_side.score <= self.right_side.score),
+			(self.left_side.result == MatchResult.LOSS) and (self.left_side.score >= self.right_side.score),
+			(self.left_side.result == MatchResult.DRAW) and (self.left_side.score != self.right_side.score)
 		))
 
 	def _is_invalid_without_draw_allowed(self) -> bool:
 		"""
-		Checks if the match is invalid when draws are disallowed.
-
-		:return: `True` if the match is invalid, otherwise `False`.
+		TODO
 		"""
-		return (
-			self._is_invalid_without_draw_allowed_by_player_status()
-			or self._is_invalid_without_draw_allowed_by_score()
-		)
+		return self._is_invalid_without_draw_allowed_by_results() or self._is_invalid_without_draw_allowed_by_scores()
 
-	def _is_invalid_without_draw_allowed_by_player_status(self) -> bool:
+	def _is_invalid_without_draw_allowed_by_results(self) -> bool:
 		"""
-		Checks if player statuses are invalid when draws are disallowed.
-
-		:return: `True` if a player's status is invalid, otherwise `False`.
-		"""
-		return (
-			(self.right.player_status == self.left.player_status)
-			or (self.right.player_status == PlayerStatus.DRAW)
-			or (self.left.player_status == PlayerStatus.DRAW)
-		)
-
-	def _is_invalid_without_draw_allowed_by_score(self) -> bool:
-		"""
-		Checks if scores are invalid when draws are disallowed.
-
-		:return: `True` if a score is invalid, otherwise `False`.
+		TODO
 		"""
 		return any((
-			(self.right.player_status == PlayerStatus.WIN) and (self.right.score < self.left.score),
-			(self.right.player_status == PlayerStatus.LOSS) and (self.right.score > self.left.score),
-			(self.left.player_status == PlayerStatus.WIN) and (self.left.score < self.right.score),
-			(self.left.player_status == PlayerStatus.LOSS) and (self.left.score > self.right.score)
+			self.right_side.result == self.left_side.result,
+			self.right_side.result == MatchResult.DRAW,
+			self.left_side.result == MatchResult.DRAW
+		))
+
+	def _is_invalid_without_draw_allowed_by_scores(self) -> bool:
+		"""
+		TODO
+		"""
+		return any((
+			(self.right_side.result == MatchResult.WIN) and (self.right_side.score < self.left_side.score),
+			(self.right_side.result == MatchResult.LOSS) and (self.right_side.score > self.left_side.score),
+			(self.left_side.result == MatchResult.WIN) and (self.left_side.score < self.right_side.score),
+			(self.left_side.result == MatchResult.LOSS) and (self.left_side.score > self.right_side.score)
 		))
 
 	def record_match(self) -> None:
 		"""
-		Finalizes the match by recording the results for both players.
-
-		:raises ValueError: If the match is not in a valid state for recording.
+		TODO
 		"""
 		if self.status != MatchStatus.VALID:
 			raise ValueError("Cannot record a match that is not in a valid state.")
 
-		self._record_match_for_side(self.right, self.left)
-		self._record_match_for_side(self.left, self.right)
-		self.match_status = MatchStatus.LOCKED
+		self._record_side_of_match(self.right_side, self.left_side)
+		self._record_side_of_match(self.left_side, self.right_side)
+		self.status = MatchStatus.LOCKED
 
 	@staticmethod
-	def _record_match_for_side(self_side: Side, other_side: Side) -> None:
+	def _record_side_of_match(self_side: Side, other_side: Side) -> None:
 		"""
-		Records the match results for one side.
-
-		:param self_side: The side whose results are to be recorded.
-		:param other_side: The opponent's side.
+		TODO
 		"""
-		self_side.player.record_match(
-			result=self_side.player_status.value,
-			scored=self_side.score,
-			received=other_side.score,
-			opponent=other_side.player.id
+		self_side.player.add_match(
+			opponent=other_side.player,
+			self_result=self_side.result,
+			touches_scored=self_side.score,
+			touches_received=other_side.score
 		)
