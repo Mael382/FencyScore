@@ -20,6 +20,9 @@ class MatchResult(StrEnum):
 	LOSS = auto()
 	DRAW = auto()
 
+	def __str__(self) -> str:
+		return self.value.upper()
+
 
 @define(kw_only=True, init=False, eq=False)
 class Player(ABC):
