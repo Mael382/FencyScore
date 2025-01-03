@@ -71,7 +71,7 @@ class Team(Player):
 				del self[fencer]
 			except IndexError:
 				raise IndexError(f"Index {fencer} is out of range for {self}.")
-		elif isinstance(fencer, Fencer):
+		else:
 			try:
 				self.fencers.remove(fencer)
 			except ValueError:
