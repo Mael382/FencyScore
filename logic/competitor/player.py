@@ -8,10 +8,10 @@ from logic.utils import validator_pos_int, validator_pos_z_int
 MatchResult: type[str] = Literal["win", "loss", "draw"]
 
 
-@define(init=False, kw_only=True, eq=False)
+@define(kw_only=True, init=False, eq=False)
 class Player(ABC):
 	"""
-    Represents a player in a tournament with match and score tracking.
+    Represents a player in a tournament with ID and performance tracking.
 
     Attributes:
         id: Unique player identifier.
@@ -19,9 +19,8 @@ class Player(ABC):
         draws: Number of matches drawn.
         touches_scored: Total touches scored.
         touches_received: Total touches received.
-        opponents: Set of opponent IDs faced.
-        exempted: Whether the player is exempted in a round.
-        _cached_score: Cached score details for ranking.
+        opponents: Opponent IDs faced.
+        exempted: Whether the player has been exempted in a round.
     """
 	# Class-level ID generator
 	_id_generator: ClassVar[count[int]] = count(start=1)
@@ -50,23 +49,22 @@ class Player(ABC):
 
 	@property
 	def result(self) -> tuple[int, int]:
-		"""Returns the match results as a tuple of (victories, draws)."""
+		"""Player's result as a tuple of (victories, draws)."""
 		return self.victories, self.draws
 
 	@property
 	def indicator(self) -> int:
-		"""Returns the performance indicator (touches scored - touches received)."""
+		"""Player's touch indicator (touches scored - touches received)."""
 		return self.touches_scored - self.touches_received
 
 	@property
 	def score(self) -> tuple[tuple[int, int], int, int]:
-		"""Returns the player's score tuple for ranking purposes."""
+		"""Player's score as a tuple of ((victories, draws), indicator, touches scored)."""
 		if not self._cached_score:
 			self._cached_score = (self.result, self.indicator, self.touches_scored)
 		return self._cached_score
 
 	def __lt__(self, other: 'Player') -> bool:
-		"""Compares two players based on their scores."""
 		return self.score < other.score
 
 	def add_match(
@@ -82,7 +80,7 @@ class Player(ABC):
 
         Args:
             opponent: The opposing player.
-            self_result: The result for this player ("win", "loss", "draw").
+            self_result: The result for this player (`"win"`, `"loss"` or `"draw"`).
             touches_scored: Touches scored by this player.
             touches_received: Touches received by this player.
 
@@ -101,8 +99,8 @@ class Player(ABC):
 			"loss": ("loss", "win"),
 			"draw": ("draw", "draw"),
 		}
-
 		self_side, opponent_side = result_map[self_result]
+
 		self._add_side_of_match(opponent.id, self_side, touches_scored, touches_received)
 		opponent._add_side_of_match(self.id, opponent_side, touches_received, touches_scored)
 
@@ -113,7 +111,7 @@ class Player(ABC):
 		touches_scored: int,
 		touches_received: int
 	) -> None:
-		"""Updates the player's statistics based on a match result."""
+		"""Updates the player's statistics."""
 		if self_result == "win":
 			self.victories += 1
 		elif self_result == "draw":
@@ -126,7 +124,7 @@ class Player(ABC):
 
 	def add_bye(self) -> None:
 		"""
-		Marks the player as exempted for a round.
+		Marks the player as exempted for one round.
 
 		Raises:
 			ValueError: If the player has already been exempted.
@@ -137,7 +135,7 @@ class Player(ABC):
 		self.exempted = True
 
 	def reset(self) -> None:
-		"""Resets the player's statistics and state."""
+		"""Resets the player's statistics."""
 		self.victories = 0
 		self.draws = 0
 		self.touches_scored = 0
