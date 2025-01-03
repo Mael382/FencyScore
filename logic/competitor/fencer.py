@@ -23,8 +23,8 @@ def validator_birthdate(_, __, value: date) -> None:
 
     Args:
     	_: Unused parameter for instance.
-        __: Unused parameter for attribute.
-        value: The birthdate to validate.
+    	__: Unused parameter for attribute.
+    	value: The birthdate to validate.
 
     Raises:
         ValueError: If the birthdate is in the future or exceeds the maximum age.
