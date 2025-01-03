@@ -29,12 +29,12 @@ def create_string_converter(transform_func: Callable[[str], str]) -> Callable[[s
 
 # String converters
 converter_str_upper: Callable[[str], str] = create_string_converter(str.upper)
-"""TODO"""  # TODO
+"""Converts the provided string to uppercase."""
 converter_str_title: Callable[[str], str] = create_string_converter(str.title)
-"""TODO"""  # TODO
+"""Converts the provided string to title case."""
 
 # Integer validators
 validator_pos_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.gt(0))
-"""TODO"""  # TODO
+"""Validates the provided value to be a positive integer."""
 validator_pos_z_int: Callable[[..., ..., ...], None] = validators.and_(validators.instance_of(int), validators.ge(0))
-"""TODO"""  # TODO
+"""Validates the provided value to be a non-negative integer."""
