@@ -15,11 +15,15 @@ class Round:
 
 	Attributes:
 		rank: Round's number.
+		score_max: Maximum score allowed.
+		draw_allowed: Whether draws are allowed.
 		players: Players participating.
 		matches: Matches generated.
 		bye: Player who gets a bye.
 	"""
 	rank: int = field(validator=validator_pos_int)
+	score_max: int = field(validator=validator_pos_int)
+	draw_allowed: bool = field(validator=validators.instance_of(bool))
 	players: list[Player] = field(
 		validator=validators.deep_iterable(validators.instance_of(Player), validators.instance_of(list))
 	)
@@ -67,16 +71,16 @@ class Round:
 
 		return list(grouped_players)
 
-	def _match_groups(self, groups: list[deque[Player]]) -> deque[set[tuple[Player, Player]]]:
+	def _match_groups(self, groups: list[deque[Player]]) -> deque[deque[Match]]:
 		"""Creates matches within and across groups."""
 		return self._merge_groups(groups, deque(), 0)
 
 	def _merge_groups(
 		self,
 		groups: list[deque[Player]],
-		grouped_matches: deque[set[tuple[Player, Player]]],
+		grouped_matches: deque[deque[Match]],
 		start: int
-	) -> deque[set[tuple[Player, Player]]]:
+	) -> deque[deque[Match]]:
 		"""Creates matches and merge groups if necessary."""
 		for i, group in enumerate(groups[start:]):
 			group_matches = self._match_group(group)
@@ -94,13 +98,20 @@ class Round:
 
 		return grouped_matches
 
-	def _match_group(self, group: deque[Player]) -> set[tuple[Player, Player]]:
+	def _match_group(self, group: deque[Player]) -> deque[Match]:
 		"""Creates matches within a single group of players."""
 		matching_graph = self._group_to_matching_graph(group)
-		matches = min_weight_matching(matching_graph)
+		couples = min_weight_matching(matching_graph)
+		matches = deque()
 
-		if len(matches) != len(group) % 2:
-			return set()
+		if len(couples) == len(group) % 2:
+			for couple in couples:
+				matches.append(Match(
+					score_max=self.score_max,
+					draw_allowed=self.draw_allowed,
+					right_side=couple[0],
+					left_side=couple[1]
+				))
 
 		return matches
 
@@ -121,7 +132,7 @@ class Round:
 		return abs(abs(rank1 - rank2) - size // 2)
 
 	@staticmethod
-	def _ungroup_matches(grouped_matches: deque[set[tuple[Player, Player]]]) -> list[tuple[Player, Player]]:
+	def _ungroup_matches(grouped_matches: deque[deque[Match]]) -> list[Match]:
 		"""Ungroups matches."""
 		matches = []
 
