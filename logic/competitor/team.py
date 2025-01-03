@@ -28,11 +28,11 @@ class Team(Player):
 	def __str__(self) -> str:
 		return f"{self.name} ({' | '.join(str(fencer) for fencer in self.fencers)})"
 
-	def __len__(self) -> int:
-		return len(self.fencers)
-
 	def __iter__(self) -> Iterator[Fencer]:
 		return iter(self.fencers)
+
+	def __len__(self) -> int:
+		return len(self.fencers)
 
 	def __getitem__(self, item: int) -> Fencer:
 		return self.fencers[item]
