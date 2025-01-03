@@ -77,7 +77,7 @@ class MatchStatus(StrEnum):
 	"""
 	TODO
 	"""
-	BLANK = auto()
+	PENDING = auto()
 	VALID = auto()
 	INVALID = auto()
 	LOCKED = auto()
@@ -93,7 +93,7 @@ class Match:
 	draw_allowed: bool = field(validator=validators.instance_of(bool), on_setattr=setters.frozen)
 	right_side: Side = field(validator=validators.instance_of(Side), on_setattr=setters.frozen)
 	left_side: Side = field(validator=validators.instance_of(Side), on_setattr=setters.frozen)
-	status: MatchStatus = field(default=MatchStatus.BLANK, validator=validators.instance_of(MatchStatus))
+	status: MatchStatus = field(default=MatchStatus.PENDING, validator=validators.instance_of(MatchStatus))
 
 	def __attrs_post_init__(self) -> None:
 		if self.left_side.player is self.right_side.player:
@@ -130,7 +130,7 @@ class Match:
 	def _update_match_status(self) -> None:
 		"""TODO"""
 		if self._is_empty():
-			self.status = MatchStatus.BLANK
+			self.status = MatchStatus.PENDING
 		elif self._is_invalid():
 			self.status = MatchStatus.INVALID
 		else:
@@ -163,7 +163,7 @@ class Match:
 		"""
 		TODO
 		"""
-		return (self.right_side.result == self.left_side.result) and (self.right_side.result != MatchResult.DRAW)
+		return self.right_side.result == self.left_side.result != MatchResult.DRAW
 
 	def _is_invalid_with_draw_allowed_by_scores(self) -> bool:
 		"""
